@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { IonHeader, IonToolbar, IonTitle, IonContent, IonButton } from '@ionic/angular/standalone';
+import { IonHeader, IonToolbar, IonTitle, IonContent, IonButton } from '@ionic/angular';
 import { NotificationService } from 'src/app/services/NotificationService/Notification.Service';
 import { PlatformService } from 'src/app/services/platform.service';
 
