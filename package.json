@@ -1,0 +1,14 @@
+{
+  "name": "Mobile-Desktop Template",
+  "version": "0.4.0",
+  "private": true,
+  "description": "Mobile-Desktop Template",
+  "workspaces": [
+    "Desktop",
+    "Mobile"
+  ],
+  "scripts": {
+    "start:desktop": "npm run start --workspace=Desktop",
+    "start:mobile": "npx cap add android && npx cap sync android && npx cap open android --workspace=Mobile" 
+  }
+}

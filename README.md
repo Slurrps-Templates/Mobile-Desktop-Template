@@ -113,7 +113,7 @@ npx cap add android
 ```
 
 ```bash
-export CAPACITOR_ANDROID_STUDIO_PATH="$HOME/.local/bin/android-studio-flatpak"
+export CAPACITOR_ANDROID_STUDIO_PATH="$HOME/Documents/Applications/android-studio/bin/studio.sh"
 ```
 
 3. Sync assets into native Android project:

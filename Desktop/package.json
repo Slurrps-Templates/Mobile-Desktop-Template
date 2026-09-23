@@ -4,9 +4,9 @@
   "main": "main.js",
   "type": "module",
   "scripts": {
-     "start": "electron .",
-     "build": "echo 'No build step required for JS'",
-     "package": "electron-forge package"
+    "start": "electron .",
+    "build": "echo 'No build step required for JS'",
+    "package": "electron-forge package"
   },
   "keywords": [],
   "author": "",
@@ -15,7 +15,7 @@
   "devDependencies": {
     "@types/electron": "^1.4.38",
     "@types/node": "^25.3.0",
-    "electron": "^40.6.1",
+    "electron": "^44.4.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
