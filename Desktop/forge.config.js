@@ -1,14 +1,13 @@
+const path = require('path');
+
 module.exports = {
   packagerConfig: {
-    icon: 'assets/icon/favicon', // Update path if you have a desktop icon
+    // Bundles the Ionic web build next to the packaged app as resources/www
+    extraResource: [path.resolve(__dirname, '../Mobile/www')],
   },
   makers: [
     {
       name: '@electron-forge/maker-deb',
-      config: {},
-    },
-    {
-      name: '@electron-forge/maker-rpm',
       config: {},
     },
     {
