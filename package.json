@@ -9,6 +9,15 @@
   ],
   "scripts": {
     "start:desktop": "npm run start --workspace=Desktop",
-    "start:mobile": "npx cap add android && npx cap sync android && npx cap open android --workspace=Mobile" 
+    "start:mobile": "npm run start --workspace=Mobile",
+    "format:desktop": "prettier --write Desktop/",
+    "format:mobile": "prettier --write Mobile/",
+    "build:desktop": "npm run build --workspace=Desktop",
+    "build:mobile": "npm run build --workspace=Mobile",
+    "package:desktop": "npm run package --workspace=Desktop",
+    "package:mobile": "npm run package --workspace=Mobile"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.9"
   }
 }

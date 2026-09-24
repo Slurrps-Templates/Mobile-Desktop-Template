@@ -8,257 +8,240 @@ A skeleton for a fully cross-platform application built on a single shared Angul
 | **Mobile** | Angular + Ionic + Capacitor (Android / iOS) | `Mobile/` |
 | **Desktop** | Electron (loads the Ionic web build) | `Desktop/` |
 
-Platform-specific behaviour (e.g. notifications) is routed at runtime by `PlatformService`, which detects the current environment and delegates to the appropriate service implementation each service uses platformservice to determine where to route to such as NotificationService routing to either (`ElectronNotificationService`, `MobileNotificationService`) depending on the platform.
+Platform-specific behaviour (e.g. notifications) is routed at runtime by `PlatformService`, which detects the current environment and delegates to the appropriate implementation. Shared facades such as `NotificationService` call either `ElectronNotificationService` or `MobileNotificationService` (Capacitor) depending on the platform.
+
+This repository is an npm workspaces monorepo:
+
+1. `Mobile/` — Angular + Ionic + Capacitor app (shared UI)
+2. `Desktop/` — Electron shell that loads `Mobile/www`
 
 ---
 
-This repository includes:
-
-1. Mobile/Web app in `Mobile/` (Angular + Ionic + Capacitor)
-2. Desktop app in `Desktop/` (Electron shell)
-
 ## Prerequisites
 
-1. Install Node.js and npm
-2. Install Ionic CLI globally:
+- **Node.js** `^22.22.3` (or another LTS version supported by Angular 22)
+- **npm** (workspaces enabled; comes with Node)
+- For **Android** builds:
+  - Android Studio
+  - Android SDK
+  - JDK 17+
+
+A global Ionic CLI install is optional. Root npm scripts use the Angular CLI and Capacitor CLI from workspace dependencies.
+
+---
+
+## How to Use This Template
+
+1. Clone or copy this repository.
+2. From the **repo root**, install all workspace dependencies:
 
 ```bash
-npm install -g @ionic/cli
-```
-
-3. For Android builds:
-	- Android Studio
-	- Android SDK
-	- Java 17+
-
-## Install Dependencies
-
-1. Install mobile dependencies:
-
-```bash
-cd Mobile
 npm install
 ```
 
-2. Install desktop dependencies:
+3. Customize the shared UI under `Mobile/src`.
+4. Add platform-specific behaviour using the [Development](#development) patterns (Electron bridge + Capacitor + delegate services).
+5. Before shipping, change the app id and name in [`Mobile/capacitor.config.ts`](Mobile/capacitor.config.ts) and the Android `applicationId` / package namespace under `Mobile/android`.
+
+---
+
+## Scripts Cheat Sheet
+
+Run these from the **repo root**:
+
+| Goal | Command |
+|------|---------|
+| Dev mobile (browser) | `npm run start:mobile` |
+| Dev desktop | Build mobile for `file://`, then `npm run start:desktop` (see [Desktop](#desktop)) |
+| Format | `npm run format:mobile` / `npm run format:desktop` |
+| Build | `npm run build:mobile` / `npm run build:desktop` |
+| Package | `npm run package:mobile` / `npm run package:desktop` |
+
+What the package scripts do:
+
+- **`package:mobile`** — runs `ng build && npx cap sync`. Syncs web assets into the native Capacitor project. It does **not** produce an APK by itself; open Android Studio (or Gradle) for that.
+- **`package:desktop`** — runs Electron Forge package. Build the mobile web assets with `--base-href ./` first so Electron can load them via `file://`.
+
+---
+
+## Dev / Test
+
+### Browser (fastest)
 
 ```bash
-cd ../Desktop
-npm install
+npm run start:mobile
 ```
 
-## Run Desktop App
+Open [http://localhost:4200](http://localhost:4200) and use browser DevTools.
 
-1. Build the Ionic app for Electron file loading:
+### Desktop
+
+Electron loads `Mobile/www/index.html` via `file://`, so the web build needs a relative base href:
 
 ```bash
-cd ../Mobile
-ionic build -- --base-href ./ --deploy-url ./
+npm run build --workspace=Mobile -- --base-href ./
+npm run start:desktop
 ```
 
-2. Start Electron:
+Open Electron DevTools with `Ctrl+Shift+I` (Linux/Windows) or **View → Toggle Developer Tools**.
+
+`start:desktop` compiles TypeScript (`Desktop/src` → `Desktop/dist`) then launches Electron.
+
+#### Desktop troubleshooting (blank / black window)
+
+1. Confirm [`Desktop/src/main.ts`](Desktop/src/main.ts) loads `../../Mobile/www/index.html` (relative to compiled `Desktop/dist`).
+2. Confirm the mobile build used `--base-href ./`.
+3. Confirm `npm run build:desktop` succeeded so `Desktop/dist/main.js` exists.
+
+### Android (device or emulator)
 
 ```bash
-cd ../Desktop
-npm start
+npm run package:mobile
+npx cap open android --workspace=Mobile
 ```
 
-## Debug Desktop App
+In Android Studio, pick a device/emulator and press **Run**. Debug with Logcat and Chrome remote debugging for the WebView (`chrome://inspect`).
 
-1. Rebuild web assets after mobile code changes:
+If the `Mobile/android` folder is missing (first time only):
 
 ```bash
-cd ../Mobile
-ionic build -- --base-href ./ --deploy-url ./
+npm run build:mobile
+npx cap add android --workspace=Mobile
+npx cap sync android --workspace=Mobile
 ```
 
-2. Relaunch Electron:
+---
 
-```bash
-cd ../Desktop
-npm start
+## Development
+
+This section covers how to extend the template: Electron APIs, Capacitor for web/mobile, and cross-platform Angular services.
+
+### Electron API bridge
+
+Angular never talks to Node/Electron APIs directly. Interaction goes through the `window.electronApi` bridge:
+
+```mermaid
+flowchart LR
+  Angular["Angular service"] --> Preload["Desktop/src/preload.ts"]
+  Preload --> Main["Desktop/src/main.ts"]
+  Main --> Native["Electron / Node APIs"]
+  Types["Mobile/.../global.d.ts"] -.-> Angular
 ```
 
-3. Open Electron DevTools:
-	- `Ctrl+Shift+I` on Linux/Windows
-	- Menu: `View -> Toggle Developer Tools`
+To add a new Electron capability:
 
-### Desktop Troubleshooting
+1. **Handle it in the main process** — [`Desktop/src/main.ts`](Desktop/src/main.ts)
 
-If the window is blank/black:
-
-1. Confirm `Desktop/main.js` loads `../Mobile/www/index.html`
-2. Confirm the mobile build used `--base-href ./ --deploy-url ./`
-
-## Run Mobile App (Browser)
-
-```bash
-cd Mobile
-ionic serve
+```typescript
+ipcMain.handle('desktop-do-something', async (_event, value: string) => {
+  // Node.js / Electron APIs here
+});
 ```
 
-## Build and Run Mobile App (Android)
+2. **Expose it on the preload bridge** — [`Desktop/src/preload.ts`](Desktop/src/preload.ts)
 
-1. Build web assets:
-
-```bash
-cd Mobile
-ionic build
+```typescript
+contextBridge.exposeInMainWorld('electronApi', {
+  showMessageBox: (options: MessageBoxOptions) =>
+    ipcRenderer.invoke('desktop-show-message-box', options),
+  // add new methods alongside existing ones:
+  doSomething: (value: string) => ipcRenderer.invoke('desktop-do-something', value),
+});
 ```
 
-2. Add Android platform (first time only):
+3. **Type it for Angular** — [`Mobile/src/app/interfaces/global.d.ts`](Mobile/src/app/interfaces/global.d.ts)
 
-```bash
-npx cap add android
+```typescript
+export interface IElectronAPI {
+  showMessageBox: (options: {
+    type: string;
+    title: string;
+    message: string;
+  }) => Promise<void>;
+  doSomething: (value: string) => Promise<void>;
+}
 ```
 
-```bash
-export CAPACITOR_ANDROID_STUDIO_PATH="$HOME/Documents/Applications/android-studio/bin/studio.sh"
+Without the `global.d.ts` entry, TypeScript will not know about the new method on `window.electronApi`. After changing Desktop sources, rebuild/restart Electron (`npm run start:desktop`) so `Desktop/dist` picks up the changes.
+
+See `NotificationService` / `ElectronNotificationService` for a working example (`showMessageBox`).
+
+### Capacitor (web and mobile)
+
+Capacitor is the default path for **web** and **native mobile**. Use official Capacitor plugins (or web APIs) directly in the Capacitor/mobile service implementation — no preload bridge is required.
+
+Example from this template: [`capacitorNotification.service.ts`](Mobile/src/app/services/NotificationService/capacitorNotification.service.ts) uses `@capacitor/dialog`.
+
+```typescript
+import { Dialog } from '@capacitor/dialog';
+
+await Dialog.alert({ title, message, buttonTitle: 'OK' });
 ```
 
-3. Sync assets into native Android project:
+That same implementation covers browser and Android/iOS when the facade’s `default` branch runs (anything that is not Electron).
 
-```bash
-npx cap sync android
+### Cross-platform services (delegate pattern)
+
+Create a new folder under `Mobile/src/app/services/` with:
+
+| File | Role |
+|------|------|
+| `myFeature.service.ts` | Shared facade — picks Electron vs Capacitor based on `PlatformService` |
+| `electronMyFeature.service.ts` | Electron-specific code (`window.electronApi`) |
+| `capacitorMyFeature.service.ts` | Web/mobile code (Capacitor plugins / web APIs) |
+
+Reference layout (notifications):
+
+```
+Mobile/src/app/services/NotificationService/
+  notification.service.ts              # facade
+  electronNotification.service.ts      # Electron
+  capacitorNotification.service.ts     # Capacitor / web
 ```
 
-4. Open in Android Studio:
-
-```bash
-source ~/.bashrc
-echo "$CAPACITOR_ANDROID_STUDIO_PATH"
-npx cap open android
-```
-
-## Debug Mobile App
-
-### Browser Debug
-
-1. Run `ionic serve`
-2. Use browser DevTools
-
-### Android Debug
-
-1. Open Android Studio with `npx cap open android`
-2. Run on emulator/device
-3. Use Logcat and Chrome remote debugging for WebView
-
-## Package Desktop App
-
-1. Build mobile web assets for Electron first:
-
-```bash
-cd ../Mobile
-ionic build -- --base-href ./ --deploy-url ./
-```
-
-2. Package Electron app:
-
-```bash
-cd ../Desktop
-npm run package
-```
-
-3. Find packaged output in `Desktop/out` (or `Desktop/out/make` depending on maker).
-
-## Package Mobile App (Android)
-
-### Option 1: Build from Android Studio (recommended)
-
-1. Build and sync web assets:
-
-```bash
-cd Mobile
-ionic build
-npx cap sync android
-```
-
-2. Open Android Studio:
-
-```bash
-npx cap open android
-```
-
-3. In Android Studio:
-	- For APK: `Build > Build Bundle(s) / APK(s) > Build APK(s)`
-	- For Play Store: `Build > Generate Signed Bundle / APK > Android App Bundle`
-
-### Option 2: Build from CLI with Gradle
-
-1. Build and sync web assets:
-
-```bash
-cd Mobile
-ionic build
-npx cap sync android
-```
-
-2. Build debug APK:
-
-```bash
-cd android
-./gradlew assembleDebug
-```
-
-3. Build release AAB:
-
-```bash
-./gradlew bundleRelease
-```
-
-4. Output locations:
-	- Debug APK: `Mobile/android/app/build/outputs/apk/debug/`
-	- Release AAB: `Mobile/android/app/build/outputs/bundle/release/`
-
-## Adding Cross-Platform Services
-
-This template uses a **delegate pattern** — a single shared service routes calls to platform-specific implementations at runtime. Follow these steps to add a new cross-platform capability (e.g. storage, file access, share sheet).
-
-### 1. Create the platform-specific implementations
-
-**`Mobile/src/app/services/MyService/ElectronMy.Service.ts`** — Electron behaviour, communicating with the main process via IPC:
+**1. Electron implementation**
 
 ```typescript
 import { Injectable } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
-export class ElectronMyService {
+export class ElectronMyFeatureService {
   async doSomething(value: string): Promise<void> {
-    if (!window.electronApi) throw new Error('electronApi bridge is not available');
+    if (!window.electronApi) {
+      throw new Error('electronApi bridge is not available');
+    }
     await window.electronApi.doSomething(value);
   }
 }
 ```
 
-**`Mobile/src/app/services/MyService/MobileMy.Service.ts`** — Mobile/web behaviour using Capacitor plugins or Angular APIs:
+**2. Capacitor / web implementation**
 
 ```typescript
 import { Injectable } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
-export class MobileMyService {
+export class CapacitorMyFeatureService {
   async doSomething(value: string): Promise<void> {
-    // e.g. use a Capacitor plugin or browser API
+    // Capacitor plugin or browser API
   }
 }
 ```
 
-### 2. Create the shared facade service
-
-**`Mobile/src/app/services/MyService/My.Service.ts`** — injects `PlatformService` and delegates to the right implementation:
+**3. Shared facade**
 
 ```typescript
 import { Injectable } from '@angular/core';
 import { PlatformService } from '../platform.service';
-import { ElectronMyService } from './ElectronMy.Service';
-import { MobileMyService } from './MobileMy.Service';
+import { ElectronMyFeatureService } from './electronMyFeature.service';
+import { CapacitorMyFeatureService } from './capacitorMyFeature.service';
 
 @Injectable({ providedIn: 'root' })
-export class MyService {
+export class MyFeatureService {
   constructor(
     private platformService: PlatformService,
-    private electron: ElectronMyService,
-    private mobile: MobileMyService
+    private electron: ElectronMyFeatureService,
+    private capacitor: CapacitorMyFeatureService,
   ) {}
 
   async doSomething(value: string): Promise<void> {
@@ -267,53 +250,94 @@ export class MyService {
         await this.electron.doSomething(value);
         return;
       default:
-        await this.mobile.doSomething(value);
+        await this.capacitor.doSomething(value);
         return;
     }
   }
 }
 ```
 
-`getPlatform()` returns one of: `'electron'` | `'android'` | `'ios'` | `'capacitor'` | `'cordova'` | `'hybrid'` | `'web'` | `'unknown'`
+`getPlatform()` returns one of: `'electron'` | `'android'` | `'ios'` | `'capacitor'` | `'cordova'` | `'hybrid'` | `'web'` | `'unknown'`.
 
-The `default` branch handles all mobile and web targets.
+The `default` branch handles all Capacitor mobile and web targets.
 
-### 3. Expose the IPC handler in Electron (if needed)
-
-If the Electron implementation needs main-process APIs (filesystem, dialogs, etc.), add a handler in **`Desktop/main.js`**:
-
-```javascript
-ipcMain.handle('desktop-do-something', async (_event, value) => {
-  // use Node.js / Electron APIs here
-});
-```
-
-Then expose it through the preload bridge in **`Desktop/preload.cjs`**:
-
-```javascript
-contextBridge.exposeInMainWorld('electronApi', {
-  // ...existing entries...
-  doSomething: (value) => ipcRenderer.invoke('desktop-do-something', value),
-});
-```
-
-### 4. Inject the facade service in your component
+**4. Use only the facade in components**
 
 ```typescript
-constructor(private myService: MyService) {}
+constructor(private myFeature: MyFeatureService) {}
 
 async handleAction(): Promise<void> {
-  await this.myService.doSomething('hello');
+  await this.myFeature.doSomething('hello');
 }
 ```
 
-Only ever inject the shared facade (`MyService`) in components — never the platform-specific implementations directly.
+Never inject the Electron or Capacitor implementations directly in components.
+
+---
+
+## Package Android APK
+
+`package:mobile` prepares the native project. The APK is built in Android Studio (recommended) or with Gradle.
+
+### Option 1: Android Studio (recommended)
+
+```bash
+npm run package:mobile
+npx cap open android --workspace=Mobile
+```
+
+In Android Studio:
+
+- **Debug APK:** Build → Build Bundle(s) / APK(s) → Build APK(s)
+- **Play Store:** Build → Generate Signed Bundle / APK → Android App Bundle (or APK)
+
+### Option 2: Gradle CLI
+
+```bash
+npm run package:mobile
+cd Mobile/android
+./gradlew assembleDebug
+```
+
+Release app bundle:
+
+```bash
+./gradlew bundleRelease
+```
+
+Output locations:
+
+- Debug APK: `Mobile/android/app/build/outputs/apk/debug/`
+- Release AAB: `Mobile/android/app/build/outputs/bundle/release/`
+
+---
+
+## Package Desktop App
+
+1. Build mobile web assets for Electron:
+
+```bash
+npm run build --workspace=Mobile -- --base-href ./
+```
+
+2. Package with Electron Forge:
+
+```bash
+npm run package:desktop
+```
+
+3. Find packaged output under `Desktop/out` (or `Desktop/out/make`, depending on the Forge maker).
 
 ---
 
 ## Useful Paths
 
-1. Mobile source: `Mobile/src`
-2. Mobile web build: `Mobile/www`
-3. Electron main process: `Desktop/main.js`
-4. Electron preload script: `Desktop/preload.cjs`
+| Path | Purpose |
+|------|---------|
+| `Mobile/src` | Shared Angular + Ionic source |
+| `Mobile/src/app/interfaces/global.d.ts` | TypeScript types for `window.electronApi` |
+| `Mobile/www` | Web build output (Capacitor + Electron) |
+| `Mobile/android` | Capacitor Android native project |
+| `Desktop/src/main.ts` | Electron main process (IPC handlers) |
+| `Desktop/src/preload.ts` | Electron preload / `electronApi` bridge |
+| `Desktop/dist` | Compiled Electron output (`tsc`) |

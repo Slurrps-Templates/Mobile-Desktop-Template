@@ -1,10 +1,9 @@
-import { Injectable } from "@angular/core";
+import { Injectable } from '@angular/core';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ElectronNotificationService {
-
   async alert(type: string, message: string) {
     if (!window.electronApi) {
       throw new Error('electronApi bridge is not available');
@@ -13,7 +12,7 @@ export class ElectronNotificationService {
     await window.electronApi.showMessageBox({
       type: type.toLowerCase(),
       title: type,
-      message
+      message,
     });
   }
 }

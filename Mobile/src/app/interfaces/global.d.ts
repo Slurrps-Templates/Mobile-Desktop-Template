@@ -1,6 +1,10 @@
 //Defines the interface for the Electron API bridge and extends the Window object to include it.
 export interface IElectronAPI {
-    showMessageBox: (options: { type: string; title: string; message: string }) => Promise<void>;
+  showMessageBox: (options: { type: string; title: string; message: string }) => Promise<void>;
+
+  // Add more methods here for the electronApi bridge so that Angular can use them
+  // Example:
+  // showMessageBox: (options: { type: string; title: string; message: string }) => Promise<void>;
 }
 
 //Declares the global Window interface to include the optional Electron API bridge.

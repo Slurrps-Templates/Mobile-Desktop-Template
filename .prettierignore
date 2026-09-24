@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+dist
+**/dist
+www
+**/www
+coverage
+**/.angular
+android
+**/android
+ios
+**/ios
+package-lock.json
+**/package-lock.json
+*.min.js
+*.min.css

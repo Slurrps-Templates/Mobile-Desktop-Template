@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { IonHeader, IonToolbar, IonTitle, IonContent, IonButton } from '@ionic/angular';
-import { NotificationService } from 'src/app/services/NotificationService/Notification.Service';
+import { NotificationService } from 'src/app/services/NotificationService/notification.service';
 import { PlatformService } from 'src/app/services/platform.service';
 
 @Component({
@@ -12,7 +12,10 @@ import { PlatformService } from 'src/app/services/platform.service';
 export class HomePage {
   platform = 'detecting...';
 
-  constructor(public notificationService: NotificationService, private platformService: PlatformService) {
+  constructor(
+    public notificationService: NotificationService,
+    private platformService: PlatformService,
+  ) {
     this.platform = this.platformService.getPlatform();
   }
 
