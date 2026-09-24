@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Platform } from '@ionic/angular';
 import { PlatformService } from './platform.service';
-import { LoggerService } from './logger.service';
+import { LoggerService } from '../logger.service';
 
 describe('PlatformService', () => {
   let service: PlatformService;

@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HomePage } from './home.page';
 import { NotificationService } from '@app/core/services/notification/notification.service';
-import { PlatformService } from '@app/core/services/platform.service';
+import { PlatformService } from '@app/core/services/platform/platform.service';
 
 describe('HomePage', () => {
   let component: HomePage;

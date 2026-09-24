@@ -2,8 +2,8 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiClientService } from './api-client.service';
-import type { ApiResponse } from '@app/interfaces/api-response.model';
-import type { User } from '@app/interfaces/user.model';
+import type { ApiResponse } from 'src/app/models/api-response.model';
+import type { User } from 'src/app/models/user.model';
 
 /** Example feature API — call ApiClientService from here, not from pages. */
 @Injectable({ providedIn: 'root' })

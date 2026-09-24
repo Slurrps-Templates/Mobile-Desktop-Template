@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { NotificationService } from './notification.service';
 import { ElectronNotificationService } from './electron-notification.service';
 import { CapacitorNotificationService } from './capacitor-notification.service';
-import { PlatformService } from '../platform.service';
+import { PlatformService } from '../platform/platform.service';
 
 describe('NotificationService', () => {
   it('routes to electron implementation on electron platform', async () => {

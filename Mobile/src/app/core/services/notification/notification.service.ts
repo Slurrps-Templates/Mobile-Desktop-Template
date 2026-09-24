@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { ElectronNotificationService } from './electron-notification.service';
 import { CapacitorNotificationService } from './capacitor-notification.service';
-import { PlatformService } from '../platform.service';
+import { PlatformService } from '../platform/platform.service';
 
 @Injectable({
   providedIn: 'root',

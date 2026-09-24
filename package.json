@@ -8,6 +8,7 @@
     "Mobile"
   ],
   "scripts": {
+    "postinstall": "node scripts/link-capacitor-modules.js",
     "start:desktop": "npm run build:mobile:electron && npm run start --workspace=Desktop",
     "start:mobile": "npm run start --workspace=Mobile",
     "format": "prettier --write Desktop/ Mobile/",

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Platform } from '@ionic/angular';
-import { LoggerService } from './logger.service';
+import { LoggerService } from '../logger.service';
 
 export type AppPlatform =
   'electron' | 'android' | 'ios' | 'capacitor' | 'cordova' | 'hybrid' | 'web' | 'unknown';

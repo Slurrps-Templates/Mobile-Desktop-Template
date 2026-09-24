@@ -2,7 +2,7 @@
 import { Injectable, inject } from '@angular/core';
 import { AuthStore } from '@app/stores/auth.store';
 import { StorageService } from './storage.service';
-import type { User } from '@app/interfaces/user.model';
+import type { User } from 'src/app/models/user.model';
 
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';

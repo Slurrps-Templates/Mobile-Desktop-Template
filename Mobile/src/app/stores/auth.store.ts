@@ -1,6 +1,6 @@
 // EXAMPLE — replace with your app logic
 import { computed, Injectable, signal } from '@angular/core';
-import type { User } from '@app/interfaces/user.model';
+import type { User } from 'src/app/models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthStore {

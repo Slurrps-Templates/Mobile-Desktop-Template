@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { IonHeader, IonToolbar, IonTitle, IonContent, IonButton } from '@ionic/angular';
 import { NotificationService } from '@app/core/services/notification/notification.service';
-import { PlatformService } from '@app/core/services/platform.service';
+import { PlatformService } from '@app/core/services/platform/platform.service';
 
 @Component({
   selector: 'app-home',

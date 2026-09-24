@@ -109,6 +109,8 @@ CSP is set in `index.html`, `ng serve` headers (`angular.json`), and Electron se
 
 **Desktop:** `npm run start:desktop` → DevTools `Ctrl+Shift+I`
 
+Routing uses **hash URLs** (`index.html#/home`) so Electron/Capacitor `file://` reloads keep working.
+
 **Android:** `npm run package:mobile` then `npx cap open android --workspace=Mobile`
 
 ---
